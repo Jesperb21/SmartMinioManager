@@ -38,27 +38,6 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-
-  mariadb:
-    image: toughiq/mariadb-cluster
-    ports:
-      - "3306:3306"
-    networks:
-      - mariadbnet
-    environment:
-      DB_SERVICE: mariadb
-      ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: somedb
-      MYSQL_USER: someuser
-      MYSQL_PASSWORD: very_secret
-    deploy:
-      replicas: 2
-      restart_policy:
-        condition: on-failure
-      update_config:
-        parallelism: 1
-        delay: 5s
-
 networks:
   minionet:
   mariadbnet:
