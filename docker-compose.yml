@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  smartminiomanager:
+    image: smartminiomanager
+    build:
+      context: ./SmartMinioManager
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    networks:
+      - minionet
+    volumes:
+      - minio-disk-1:/volume1
+      - minio-disk-2:/volume2
+    environment:
+      MINIO_ACCESS_KEY: 6b4535c9d0545e036d5b
+      MINIO_SECRET_KEY: f50a73124f5699570beb9ad44cd941
+    depends_on:
+      - minio-redis
+    deploy:
+      mode: global
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.labels.type == storage
+
+  minio-redis:
+    image: redis
+    ports: ["6379"]
+    networks:
+      - minionet
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  mariadb:
+    image: toughiq/mariadb-cluster
+    ports:
+      - "3306:3306"
+    networks:
+      - mariadbnet
+    environment:
+      DB_SERVICE: mariadb
+      ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: somedb
+      MYSQL_USER: someuser
+      MYSQL_PASSWORD: very_secret
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 5s
+
+networks:
+  minionet:
+  mariadbnet:
+
+volumes:
+  minio-disk-1:
+  minio-disk-2:
