@@ -19,6 +19,7 @@ namespace SmartMinioManager
 
         private bool _minioRunning;
         private static readonly Process MinioProcess = new Process(); //there can be only one!
+        private static string _localIp;
 
         public void Start(int min)
         {
@@ -72,8 +73,10 @@ namespace SmartMinioManager
         /// <param name="db"></param>
         private static void AddHostToRedisIfNeeded(IDatabase db)
         {
-            if (!db.ListRange("minio_hosts").ToList().Contains(GetIp(Dns.GetHostName())))//todo uh... use any instead perhaps
-                db.ListRightPush("minio_hosts", GetIp(Dns.GetHostName()));//add yourself to redis if you aren't there already
+            _localIp = GetIp(Dns.GetHostName());
+
+            if (!db.ListRange("minio_hosts").ToList().Contains(_localIp))//todo uh... use any instead perhaps
+                db.ListRightPush("minio_hosts", _localIp);//add yourself to redis if you aren't there already
         
             Console.Out.WriteLineAsync("adding ip to redis host list");
         }
@@ -81,13 +84,13 @@ namespace SmartMinioManager
         private void minioRestartEventHandler(RedisChannel channel, RedisValue msgValue)
         {
             Console.Out.WriteLineAsync("event received from redis");
-            if (String.Equals(msgValue.ToString(), "minio_host_added"))
-            {
-                Console.Out.WriteLineAsync("restarting minio");
 
-                StopMinio();
-                RefreshHostsAndStartMinio();
-            }
+            if (!string.Equals(msgValue.ToString(), "minio_host_added")) return;
+
+            Console.Out.WriteLineAsync("restarting minio");
+
+            StopMinio();
+            RefreshHostsAndStartMinio();
         }
 
         private static ConnectionMultiplexer OpenRedisConnection(string hostname)
@@ -163,12 +166,11 @@ namespace SmartMinioManager
         }
         private void StopMinio()
         {
-            if (_minioRunning)
-            {
-                Console.Out.WriteLineAsync("killing minio process");
-                MinioProcess.Kill();
-                _minioRunning = false;
-            }
+            if (!_minioRunning) return;
+
+            Console.Out.WriteLineAsync("killing minio process");
+            MinioProcess.Kill();
+            _minioRunning = false;
         }
 
 
@@ -176,12 +178,19 @@ namespace SmartMinioManager
 
         private string CreateArgumentString()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.Append("server");
 
             foreach (var host in _minioHosts)
             {
-                sb.Append($" {host}/volume1 {host}/volume2");
+                if (_localIp.Equals(host))
+                {
+                    sb.Append($" /volume1 /volume2");
+                }
+                else
+                {
+                    sb.Append($" {host}/volume1 {host}/volume2");
+                }
             }
             return sb.ToString();
         }
