@@ -189,7 +189,7 @@ namespace SmartMinioManager
                 }
                 else
                 {
-                    sb.Append($" {host}/volume1 {host}/volume2");
+                    sb.Append($" http://{host}/volume1 http://{host}/volume2");
                 }
             }
             return sb.ToString();
