@@ -153,6 +153,7 @@ namespace SmartMinioManager
         #region process manipulation
         private void StartMinio()
         {
+            Console.WriteLine($"i am located at {_localIp}");
             var argumentString = CreateArgumentString();
             Console.Out.WriteLineAsync(argumentString);
 
