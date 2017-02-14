@@ -51,7 +51,7 @@ namespace SmartMinioManager
             }
             while (true)
             {
-                if(_redis == null || !_redis.IsConnected)
+                if (_redis == null || !_redis.IsConnected)
                 {
                     Console.Out.WriteLineAsync("reconnecting to redis database");
                     _redis = OpenRedisConnection("minio-redis");
@@ -66,7 +66,7 @@ namespace SmartMinioManager
             }
             // ReSharper disable once FunctionNeverReturns
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -75,9 +75,9 @@ namespace SmartMinioManager
         {
             _localIp = GetIp(Dns.GetHostName());
 
-            if (!db.ListRange("minio_hosts").ToList().Contains(_localIp))//todo uh... use any instead perhaps
-                db.ListRightPush("minio_hosts", _localIp);//add yourself to redis if you aren't there already
-        
+            if (!db.ListRange("minio_hosts").ToList().Contains(_localIp)) //todo uh... use any instead perhaps
+                db.ListRightPush("minio_hosts", _localIp); //add yourself to redis if you aren't there already
+
             Console.Out.WriteLineAsync("adding ip to redis host list");
         }
 
@@ -113,6 +113,7 @@ namespace SmartMinioManager
                 }
             }
         }
+
         private static string GetIp(string hostname)
             => Dns.GetHostEntryAsync(hostname)
                 .Result
@@ -129,6 +130,7 @@ namespace SmartMinioManager
                 StartMinio();
             }
         }
+
         private void RefreshHostList()
         {
             _minioHosts.Clear();
@@ -151,6 +153,7 @@ namespace SmartMinioManager
         }
 
         #region process manipulation
+
         private void StartMinio()
         {
             Console.WriteLine($"i am located at {_localIp}");
@@ -165,6 +168,7 @@ namespace SmartMinioManager
 
             _minioRunning = true;
         }
+
         private void StopMinio()
         {
             if (!_minioRunning) return;
@@ -182,16 +186,12 @@ namespace SmartMinioManager
             var sb = new StringBuilder();
             sb.Append("server");
 
+            _minioHosts.Sort();
+
             foreach (var host in _minioHosts)
             {
-                if (_localIp.Equals(host))
-                {
-                    sb.Append($" /volume1 /volume2");
-                }
-                else
-                {
-                    sb.Append($" http://{host}/volume1 http://{host}/volume2");
-                }
+                
+                sb.Append($" http://{host}/volume1 http://{host}/volume2");
             }
             return sb.ToString();
         }
